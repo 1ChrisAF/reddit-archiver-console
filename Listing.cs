@@ -12,4 +12,9 @@ public class Listing {
         this.data_permalink = p;
         this.datetime = d;
     }
+
+    public string toString() {
+        string returnString = $"data-type:      {this.data_type}\ndata-subreddit: {this.data_subreddit}\ndata-author:    {this.data_author}\ndata-permalink: {this.data_permalink}\ndatetime:       {this.datetime}\n";
+        return returnString;
+    }
 }

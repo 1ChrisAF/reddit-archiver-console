@@ -11,12 +11,15 @@ void main() {
     string pageContents = htmlTask.Result;
     MatchCollection listings = getListings(pageContents);
     List<Listing> listingList = parseListings(listings);
+    foreach (Listing listing in listingList) {
+        Console.WriteLine(listing.toString());
+    }
     MatchCollection linkCandidates = getLinksFromPage(pageContents);
     string nextButtonLink = "";
     if (linkCandidates.Count > 1) {
         nextButtonLink = getNextButtonLink(linkCandidates);
     }
-    Console.WriteLine(nextButtonLink);
+    //Console.WriteLine(nextButtonLink);
 }
 
 string GetUsername() {
@@ -42,7 +45,8 @@ async Task<String> getProfileHTML(string username) {
 }
 
 MatchCollection getListings(string pageContents) {
-    Regex regex = new Regex("data-type[\\s\\S]*class=\"child\"");
+    // Regex to pull all user comments and posts from profile page
+    Regex regex = new Regex("(class=\"[^\"]*?thing[^\"]*?\")[\\s\\S]*?(class=\"child\")");
     MatchCollection listings = regex.Matches(pageContents);
     return listings;
 }
