@@ -9,6 +9,8 @@ void main() {
     }
     Task<String> htmlTask = getProfileHTML(username);
     string pageContents = htmlTask.Result;
+    MatchCollection listings = getListings(pageContents);
+    List<Listing> listingList = parseListings(listings);
     MatchCollection linkCandidates = getLinksFromPage(pageContents);
     string nextButtonLink = "";
     if (linkCandidates.Count > 1) {
@@ -37,6 +39,43 @@ async Task<String> getProfileHTML(string username) {
     var response = await client.GetAsync(url);
     var pageContents = await response.Content.ReadAsStringAsync();
     return pageContents;
+}
+
+MatchCollection getListings(string pageContents) {
+    Regex regex = new Regex("data-type[\\s\\S]*class=\"child\"");
+    MatchCollection listings = regex.Matches(pageContents);
+    return listings;
+}
+
+List<Listing> parseListings(MatchCollection listings) {
+    string data_type;
+    string data_subreddit;
+    string data_author;
+    string data_permalink;
+    DateTime datetime;
+    List<Listing> listingList = new List<Listing>();
+    Regex regex;
+    foreach (Match listing in listings) {
+        string? listingValue = listing.Value;
+        // Regex for data_type
+        regex = new Regex("(?<=data-type=\")\\S*(?=\")");
+        data_type = regex.Match(listingValue).Value;
+        // Regex for data_subreddit
+        regex = new Regex("(?<=data-subreddit=\")\\S*(?=\")");
+        data_subreddit = regex.Match(listingValue).Value;
+        // Regex for data_author
+        regex = new Regex("(?<=data-author=\")\\S*(?=\")");
+        data_author = regex.Match(listingValue).Value;
+        // Regex for data_permalink
+        regex = new Regex("(?<=data-permalink=\")\\S*(?=\")");
+        data_permalink = regex.Match(listingValue).Value;
+        // Regex for datetime
+        regex = new Regex("(?<=datetime=\")\\S*(?=\")");
+        datetime = DateTime.Parse(regex.Match(listingValue).Value);
+        Listing newListing = new Listing(data_type, data_subreddit, data_author, data_permalink, datetime);
+        listingList.Add(newListing);
+    }
+    return listingList;
 }
 
 MatchCollection getLinksFromPage(string pageContents) {
