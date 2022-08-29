@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using System.Text.Json;
 
 main();
 
@@ -7,19 +8,10 @@ void main() {
     while (username == "") {
         username = GetUsername();
     }
-    Task<String> htmlTask = getProfileHTML(username);
-    string pageContents = htmlTask.Result;
-    MatchCollection listings = getListings(pageContents);
-    List<Listing> listingList = parseListings(listings);
-    foreach (Listing listing in listingList) {
-        Console.WriteLine(listing.toString());
-    }
-    MatchCollection linkCandidates = getLinksFromPage(pageContents);
-    string nextButtonLink = "";
-    if (linkCandidates.Count > 1) {
-        nextButtonLink = getNextButtonLink(linkCandidates);
-    }
-    //Console.WriteLine(nextButtonLink);
+    List<Listing> listingList = parseThroughProfile(username);
+    string listingJSON = JsonSerializer.Serialize(listingList);
+    Console.WriteLine(listingJSON);
+
 }
 
 string GetUsername() {
@@ -28,16 +20,49 @@ string GetUsername() {
     Console.Write("Enter a username: ");
     username = Console.ReadLine();
     if (username != "") {
-        return username;
+        return username.ToLower();
     } else {
         Console.WriteLine("No username entered! Trying again...");
         return "";
     }
 }
 
-async Task<String> getProfileHTML(string username) {
+List<Listing> parseThroughProfile(string username) {
+    // List to be returned
+    List<Listing> listingList = new List<Listing>();
+    // Temp list for each profile page
+    List<Listing> newListings = new List<Listing>();
+    // For url of page of user profile, initially just username
+    string url = "https://old.reddit.com/user/" + username;
+    Task<String> htmlTask;
+    string pageContents;
+    MatchCollection listings;
+    do {
+        // Call getProfileHTML and pull HTML from relevant
+        // user profile page
+        htmlTask = getProfileHTML(url);
+        // Read Task into string
+        pageContents = htmlTask.Result;
+        // Collect all user posts and comments on page
+        listings = getListings(pageContents);
+        // Parse info from collected posts/comments into List of
+        // Listing objs from this page
+        newListings = parseListings(listings);
+        foreach (Listing listing in newListings) {
+            // Push Listing obs from THIS page into list of Listing
+            // objs for ALL pages
+            listingList.Add(listing);
+        }
+        // Assign the url from the 'next button' and loop through the next page
+        url = getNextButtonLink(pageContents);
+        // If url is empty, we are on the last page and may break
+    } while(url != "");
+    // Return all Listing objs from parse
+    return listingList;
+}
+
+async Task<String> getProfileHTML(string url) {
     HttpClient client = new HttpClient();
-    string url = "https://old.reddit.com/u/" + username;
     Console.WriteLine("Checking {0}...", url);
     var response = await client.GetAsync(url);
     var pageContents = await response.Content.ReadAsStringAsync();
@@ -82,20 +107,15 @@ List<Listing> parseListings(MatchCollection listings) {
     return listingList;
 }
 
-MatchCollection getLinksFromPage(string pageContents) {
-    // Regex to parse page for all links
-    Regex regex = new Regex(@"\b(?:https?://|www.)\S+\b");
-    var linkCandidates = regex.Matches(pageContents);
-    return linkCandidates;
-}
-
-string getNextButtonLink(MatchCollection linkCandidates) {
-    Regex regex = new Regex("OrthodoxMemes\\?count");
-    string nextButton = "";
-    foreach (var link in linkCandidates) {
-        if (regex.IsMatch(link.ToString())) {
-            nextButton = link.ToString();
-        }
-    }
-    return nextButton;
+string getNextButtonLink(string pageContents) {
+    string link = "";
+    // Grab span tag with URL
+    Regex regex = new Regex("<span class=\"[^\"]*?next-button[^\"]*?\">(.*?)<\\/span>");
+    link = regex.Match(pageContents).Value;
+    link = link.Replace("&amp;", "&");
+    // Grab URL from span tag
+    regex = new Regex("(?<=href=\")\\S*(?=\")");
+    link = regex.Match(link).Value;
+    link = link.Replace("&amp;", "&");
+    return link;
 }

@@ -1,9 +1,9 @@
 public class Listing {
-    string? data_type { get; set; }
-    string? data_subreddit { get; set; } 
-    string? data_author { get; set; }
-    string? data_permalink { get; set; }
-    DateTime datetime {get; set;}
+    public string? data_type { get; set; }
+    public string? data_subreddit { get; set; } 
+    public string? data_author { get; set; }
+    public string? data_permalink { get; set; }
+    public DateTime datetime {get; set;}
 
     public Listing(string t, string s, string a, string p, DateTime d) {
         this.data_type = t;
