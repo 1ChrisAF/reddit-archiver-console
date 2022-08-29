@@ -4,16 +4,20 @@ using System.Text.Json;
 main();
 
 void main() {
-    string username = GetUsername();
+    // string username = GetUsername();
+    string username = args[0];
+    /*
     while (username == "") {
         username = GetUsername();
     }
+    */
     List<Listing> listingList = parseThroughProfile(username);
     string listingJSON = JsonSerializer.Serialize(listingList);
     Console.WriteLine(listingJSON);
 
 }
 
+/*
 string GetUsername() {
     string username;
     // Retrieve username from user
@@ -26,6 +30,7 @@ string GetUsername() {
         return "";
     }
 }
+*/
 
 List<Listing> parseThroughProfile(string username) {
     // List to be returned
